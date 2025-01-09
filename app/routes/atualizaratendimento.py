@@ -3,7 +3,7 @@ from ..database import AtualizarAtendimento
 
 atualizaratendimento_bp = Blueprint("atualizaratendimento_bp",__name__)
 
-@atualizaratendimento_bp.route("/atendimento/atualizaratendimento")
+@atualizaratendimento_bp.route("/atualizaratendimento")
 def Atualizar():
     parametros = request.args
     filtros = {}
