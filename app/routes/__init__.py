@@ -1,0 +1,3 @@
+from .atendimentos import atendimentos_bp
+from .atualizaratendimento import atualizaratendimento_bp
+from .novoatendimento import novoatendimento_bp

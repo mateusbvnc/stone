@@ -1,0 +1,24 @@
+-- --------------------------------------------------------------------------------
+-- criação do database
+-- --------------------------------------------------------------------------------
+
+CREATE DATABASE pedrapag_db; 
+
+-- ---------------------------------------------------------------------------------
+-- criação do schema LastMile_schema
+-- ---------------------------------------------------------------------------------
+
+Create schema LastMile_schema;
+
+-- ---------------------------------------------------------------------------------
+-- criação da tabela atendimentos
+-- ---------------------------------------------------------------------------------
+
+Create table LastMile_schema.atendimentos(
+	id_atendimento serial primary key,									
+	id_cliente int not null,						
+	angel varchar(100) not null,
+	polo varchar(100) not null,
+	data_limite date not null,	
+	data_de_atendimento timestamp			
+);
