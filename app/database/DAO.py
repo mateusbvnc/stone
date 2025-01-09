@@ -1,8 +1,9 @@
 from .util import Conn
 from .DTO import Atendimento
 from json import dumps , loads
-from typing import Any
+from typing import Any 
 from sqlalchemy.exc import OperationalError
+from sqlalchemy.orm import Query
 
 '''
 O modulo DAO contem todas as funcoes de acesso ao banco de dados.
@@ -20,7 +21,8 @@ funcoes:
 
 def ConsultarAtendimento(usuario : str , 
                          senha : str,
-                         filtros :dict ) -> str:
+                         filtros :dict,
+                         json : bool = True ) -> (str | Query[Atendimento]):
 
     '''
     A funcao ConsultarAtendimento e responsavel por realizar buscas na tabela de atendimentos do banco de dados 
@@ -29,17 +31,17 @@ def ConsultarAtendimento(usuario : str ,
     Argumentos:
         usuario (str) : nome de usuario para entrar no banco de dados
         senha (str) : senha do usuario para entrar no banco de dados 
-        id_atendimento (int) : id do atendimento
-        id_cliente (int) : id do cliente
-        polo (str) : nome do polo do atendimento
-        angel (str) : nome do angel
-        data_limite (str | datetime.date) : prazo do atendimento
-        data_de_atendimento (str | datetime.datetime | None): data e hora do atendimento 
+        json (bool) : determina se o retorno ser sera um json ou uma query
 
-    retorno: 
-        query_json (str) : resultados da pesquisa no formato json  
+        filtros(dict) : dicionario contendo os campos que serao filtrados. Sao eles: 
+            id_atendimento (int) : id do atendimento
+            id_cliente (int) : id do cliente
+            polo (str) : nome do polo do atendimento
+            angel (str) : nome do angel
+            data_limite (str | datetime.date) : prazo do atendimento
+            data_de_atendimento (str | datetime.datetime | None): data e hora do atendimento 
 
-        
+      
     Exemplo de uso:
 
         from stone.app.database import ConsultarAtendimento
@@ -55,16 +57,20 @@ def ConsultarAtendimento(usuario : str ,
           
             # Pega o resultado de uma query e tranforma para JSON, tornando algo mais legivel
            
-            query_dict = { resultado.id_atendimento : { 'id_cliente' : resultado.id_cliente,
-                                                        'angel' : resultado.angel,
-                                                        'polo' : resultado.polo,
-                                                        'data_limite' : str(resultado.data_limite),
-                                                        'data_de_atendimento' : str(resultado.data_de_atendimento)
-                                                       } for resultado in query}
-
-            query_json = dumps(query_dict,indent=4)
+            query_list =  [ {   'id_atendimento' : resultado.id_atendimento, 
+                                'id_cliente' : resultado.id_cliente,
+                                'angel' : resultado.angel,
+                                'polo' : resultado.polo,
+                                'data_limite' : str(resultado.data_limite),
+                                'data_de_atendimento' : str(resultado.data_de_atendimento)
+                            } for resultado in query]
+            
+            query_json = dumps(query_list,indent=4)
 
             return query_json       
+    
+
+
 
     try:
         conn = Conn(usuario,senha)
@@ -72,19 +78,16 @@ def ConsultarAtendimento(usuario : str ,
     
         query = session.query(Atendimento)
 
-
-        if not filtros:
-            query_json = Converter_para_json(query)
-         
-            return query_json
-    
-        else:
+        if filtros:
             for campo,valor in filtros.items():
                 query=query.filter(getattr(Atendimento,campo)==valor)
 
-            query_json = Converter_para_json(query)
-         
-            return query_json
+        query = query.all()
+
+        if json:
+            return Converter_para_json(query)
+        
+        return query
         
     except (UnicodeDecodeError,OperationalError) as e:
         print(f"{str(e)} : a senha ou o usuario estao errados")  
@@ -97,7 +100,8 @@ def ConsultarAtendimento(usuario : str ,
         print("filtros:\nid_atendimento (int) : id do atendimento\nid_cliente (int) : id do cliente\npolo (str) : nome do polo do atendimento\nangel (str) : nome do angel\ndata_limite (str | datetime.date) : prazo do atendimento\ndata_de_atendimento (str | datetime.datetime | None): data e hora do atendimento" ) 
                         
     finally:
-        session.close()    
+        if session in locals():
+            session.close()    
 
 
 def CadastrarAtendimento(usuario : str,
@@ -195,5 +199,3 @@ def AtualizarAtendimento(usuario : str,
         session.close()                
             
 
-
-print(ConsultarAtendimento('postgre','password',{'id_atendimento':1}))
