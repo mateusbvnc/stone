@@ -1,19 +1,16 @@
-from flask import Blueprint, request
+from flask import Blueprint, request, Response
 from ..database import AtualizarAtendimento
+
+'''
+O modulo atualizaratendimento contem o blueprint responsavel por ataulizar dados de um atendimento
+v1.1.0 
+'''
 
 atualizaratendimento_bp = Blueprint("atualizaratendimento_bp",__name__)
 
-@atualizaratendimento_bp.route("/atualizaratendimento")
+@atualizaratendimento_bp.route("/atualizaratendimento",methods = ['PATCH'])
 def Atualizar():
-    parametros = request.args
-    filtros = {}
-    atualizacoes = {}
-    for key, value in parametros.items():
-        if key.startswith('new_'):
-            key = key[4:]
-            atualizacoes[key] = value
-        else:
-            filtros[key] = value
-
-    AtualizarAtendimento('postgres','password',filtros,atualizacoes)
-    return 'SUCESSO'
+    id_atendimento = request.args.get('id_atendimento')
+    atualizacoes = request.get_json()
+    AtualizarAtendimento('postgres','password',id_atendimento,atualizacoes)
+    return Response("Atendimento atualizado",200)

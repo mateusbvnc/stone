@@ -7,6 +7,7 @@ from sqlalchemy.orm import Query
 
 '''
 O modulo DAO contem todas as funcoes de acesso ao banco de dados.
+v1.1.0
 
 funcoes:
 
@@ -22,7 +23,7 @@ funcoes:
 def ConsultarAtendimento(usuario : str , 
                          senha : str,
                          filtros :dict,
-                         json : bool = True ) -> (str | Query[Atendimento]):
+                         json : bool = True ) -> (list[dict] | Query[Atendimento]):
 
     '''
     A funcao ConsultarAtendimento e responsavel por realizar buscas na tabela de atendimentos do banco de dados 
@@ -53,7 +54,7 @@ def ConsultarAtendimento(usuario : str ,
     '''
 
     # Funcao auxiliar
-    def Converter_para_json(query):
+    def  Converter_para_dict(query):
           
             # Pega o resultado de uma query e tranforma para JSON, tornando algo mais legivel
            
@@ -65,9 +66,7 @@ def ConsultarAtendimento(usuario : str ,
                                 'data_de_atendimento' : str(resultado.data_de_atendimento)
                             } for resultado in query]
             
-            query_json = dumps(query_list,indent=4)
-
-            return query_json       
+            return query_list     
     
 
 
@@ -80,28 +79,32 @@ def ConsultarAtendimento(usuario : str ,
 
         if filtros:
             for campo,valor in filtros.items():
-                query=query.filter(getattr(Atendimento,campo)==valor)
+                if hasattr(Atendimento,campo): 
+                    query=query.filter(getattr(Atendimento,campo)==valor)
 
         query = query.all()
 
         if json:
-            return Converter_para_json(query)
+            return  Converter_para_dict(query)
         
         return query
         
     except (UnicodeDecodeError,OperationalError) as e:
-        print(f"{str(e)} : a senha ou o usuario estao errados")  
+        print("A senha ou o usuario errado")  
 
-    except AttributeError as e:
-
-        for error in e.args:
-            print("\nErro: " + error + "\n")  
-    
-        print("filtros:\nid_atendimento (int) : id do atendimento\nid_cliente (int) : id do cliente\npolo (str) : nome do polo do atendimento\nangel (str) : nome do angel\ndata_limite (str | datetime.date) : prazo do atendimento\ndata_de_atendimento (str | datetime.datetime | None): data e hora do atendimento" ) 
-                        
+    except TypeError as e:
+        print("Argumento inesperado")   
+                                   
     finally:
-        if session in locals():
+        if session :
             session.close()    
+
+
+
+
+
+
+
 
 
 def CadastrarAtendimento(usuario : str,
@@ -145,7 +148,7 @@ def CadastrarAtendimento(usuario : str,
 
 def AtualizarAtendimento(usuario : str,
                          senha : str,
-                         filtros : dict,
+                         id_atendimento : int,
                          atualizacoes : dict) -> None:
     
     '''
@@ -157,7 +160,7 @@ def AtualizarAtendimento(usuario : str,
 
         senha (str): senha do usuario do banco de dados
 
-        filtros (dict): informacoes do usuario que sera atualizado
+        id_atendimento (int): id do atendimento que sera atualizado
 
         atualizacoes (dict): campos que serao atualizados com seus respectivos novos valores
 
@@ -165,37 +168,41 @@ def AtualizarAtendimento(usuario : str,
 
         from stone.app.database import AtualizarAtendimento
 
-        filtros = {id_atendimento : 16801}
+        id_atendimento = 14903
         atualizacoes = {data_de_atendimento : '2025-01-01 13:28:13'}
 
         AtualizarAtendimento("usuario",
                              "senha",
-                             filtros,
+                             id_atendimento,
                              atualizacoes)     
     '''
 
     try:
+
         conn = Conn(usuario,senha)
         session = conn.create_session()
-    
-        query = session.query(Atendimento)
 
+        id = {'id_atendimento': id_atendimento}
+        atendimento = ConsultarAtendimento(usuario,senha,id,False)[0]
 
-        if filtros:    
-            for campo,valor in filtros.items():
-                query=query.filter(getattr(Atendimento,campo)==valor)
+        print(atendimento)
 
-        for resultado in query.all():
-            for campo, valor in atualizacoes.items():
-                setattr(resultado,campo,valor)
-
-        session.commit()
+        for campo,novo_valor in atualizacoes.items():
+            setattr(atendimento,campo,novo_valor)
 
     except Exception:
         print("Eu penso numa mensagem disso depois")
         session.rollback()
 
+    else:
+        session.merge(atendimento)
+        session.commit()
+        print('Sucesso')
+
     finally:
-        session.close()                
-            
+        if session :
+            session.close()    
+               
+     
+
 

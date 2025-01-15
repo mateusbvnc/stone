@@ -1,11 +1,11 @@
-from flask import Blueprint, request
+from flask import Blueprint, request, Response
 from ..database import CadastrarAtendimento, Atendimento
 
 novoatendimento_bp = Blueprint("novoatendimento_bp",__name__) 
 
-@novoatendimento_bp.route("/novoatendimento")
+@novoatendimento_bp.route("/novoatendimento",methods=["POST"])
 def CriarAtendimento():
-    atendimento= request.args
+    atendimento= request.get_json()
 
     id_atendimento = int(atendimento['id_atendimento'])
     id_cliente = int(atendimento['id_cliente'])
@@ -25,4 +25,4 @@ def CriarAtendimento():
 
     CadastrarAtendimento('postgres','password',novo_atendimento)  
 
-    return 'Sucesso'   
+    return Response("Atendimento criado!",200)   
